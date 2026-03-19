@@ -1,0 +1,27 @@
+{
+  "name": "contracts",
+  "version": "1.0.0",
+  "repository": "https://github.com/HACK-SP-BR/hackathon-contracts.git",
+  "license": "MIT",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy": "npx hardhat run scripts/deploy.ts --network base"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.1.0",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.3",
+    "@types/node": "^25.5.0",
+    "dotenv": "^16.0.0",
+    "hardhat": "^3.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0",
+    "viem": "^2.47.5"
+  },
+  "dependencies": {
+    "@nomicfoundation/hardhat-verify": "^3.0.12",
+    "@nomicfoundation/hardhat-viem": "^3.0.4",
+    "chai": "^6.2.2"
+  },
+  "type": "module"
+}
