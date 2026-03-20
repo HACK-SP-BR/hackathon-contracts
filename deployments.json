@@ -7,8 +7,8 @@
   },
   "dev": {
     "HackathonVoting": {
-      "current": "0x03c1ba0e11ed7f4da68beda1d19b0c0028908a73",
-      "version": "v2"
+      "current": "0xe0a329e20b234f87e5f75fcff565bc10cd91eb8a",
+      "version": "v3"
     }
   },
   "prod": {
