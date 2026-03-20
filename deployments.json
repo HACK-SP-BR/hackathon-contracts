@@ -6,6 +6,11 @@
     "HackathonVoting": "0x713a96a263da1b5330e385f5ddd80a52e15119dd"
   },
   "prod": {
-    "HackathonVoting": "0x9c5ec34f0a3348e0baff020ae9ed301ff69f76ad"
+    "HackathonVoting": {
+      "current": "0x03c1ba0e11ed7f4da68beda1d19b0c0028908a73",
+      "history": [
+        "0x9c5ec34f0a3348e0baff020ae9ed301ff69f76ad"
+      ]
+    }
   }
 }

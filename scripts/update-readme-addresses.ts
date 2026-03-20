@@ -1,7 +1,11 @@
 import fs from "fs";
 import path from "path";
 
-type Deployments = Record<string, Record<string, string>>;
+type DeploymentContract = {
+    current?: string;
+};
+
+type Deployments = Record<string, Record<string, DeploymentContract>>;
 
 const README_PATH = path.resolve(process.cwd(), "README.md");
 const DEPLOYMENTS_PATH = path.resolve(process.cwd(), "deployments.json");
@@ -33,7 +37,13 @@ function buildSection(deployments: Deployments) {
     for (const [environment, contracts] of Object.entries(deployments)) {
         const explorer = EXPLORERS[environment] ?? { network: "Custom" };
 
-        for (const [contractName, address] of Object.entries(contracts)) {
+        for (const [contractName, contractData] of Object.entries(contracts)) {
+            const address = contractData?.current;
+
+            if (!address) {
+                continue;
+            }
+
             const explorerLink = explorer.baseUrl
                 ? `[View on BaseScan](${explorer.baseUrl}${address})`
                 : "Not public";

@@ -173,9 +173,7 @@ This section is generated from [`deployments.json`](/home/dweg0/Documents/hacksp
 
 | Environment | Network | Contract | Address | Explorer |
 | --- | --- | --- | --- | --- |
-| `local` | Local Hardhat | `HackathonVoting` | `0x5fbdb2315678afecb367f032d93f642f64180aa3` | Not public |
-| `dev` | Base Sepolia | `HackathonVoting` | `0x713a96a263da1b5330e385f5ddd80a52e15119dd` | [View on BaseScan](https://sepolia.basescan.org/address/0x713a96a263da1b5330e385f5ddd80a52e15119dd) |
-| `prod` | Base Mainnet | `HackathonVoting` | `0x9c5ec34f0a3348e0baff020ae9ed301ff69f76ad` | [View on BaseScan](https://basescan.org/address/0x9c5ec34f0a3348e0baff020ae9ed301ff69f76ad) |
+| `prod` | Base Mainnet | `HackathonVoting` | `0x03c1ba0e11ed7f4da68beda1d19b0c0028908a73` | [View on BaseScan](https://basescan.org/address/0x03c1ba0e11ed7f4da68beda1d19b0c0028908a73) |
 
 Run `npm run readme:addresses` after each deployment to refresh this table.
 <!-- CONTRACT_ADDRESSES_END -->

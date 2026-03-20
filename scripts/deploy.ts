@@ -3,19 +3,40 @@ import fs from "fs";
 import path from "path";
 import * as dotenv from "dotenv";
 
-dotenv.config();
+const ENV = process.env.ENV || "local";
 
-type Deployments = Record<string, Record<string, string>>;
+dotenv.config({
+    path: path.resolve(process.cwd(), `.env.${ENV}`),
+});
+
+type SimpleEnvMap = Record<string, string>;
+type ProdContractEntry = {
+    current: string;
+    history: string[];
+};
+type ProdEnvMap = Record<string, ProdContractEntry>;
+type Deployments = {
+    local?: SimpleEnvMap;
+    dev?: SimpleEnvMap;
+    prod?: ProdEnvMap;
+};
+
+function readDeployments(deploymentsPath: string): Deployments {
+    if (!fs.existsSync(deploymentsPath)) {
+        return { local: {}, dev: {}, prod: {} };
+    }
+
+    return JSON.parse(fs.readFileSync(deploymentsPath, "utf-8"));
+}
 
 async function main() {
-    const env = process.env.ENV || "local";
     const contractName = process.env.CONTRACT_NAME || "HackathonVoting";
 
     const { viem, networkName } = await network.connect("app");
     const publicClient = await viem.getPublicClient();
     const [wallet] = await viem.getWalletClients();
 
-    console.log(`Environment: ${env}`);
+    console.log(`Environment: ${ENV}`);
     console.log(`Network: ${networkName}`);
     console.log(`Deployer: ${wallet.account.address}`);
 
@@ -28,15 +49,39 @@ async function main() {
     console.log(`Contract deployed at: ${contract.address}`);
 
     const deploymentsPath = path.resolve("deployments.json");
-    const deployments: Deployments = fs.existsSync(deploymentsPath)
-        ? JSON.parse(fs.readFileSync(deploymentsPath, "utf-8"))
-        : {};
+    const deployments = readDeployments(deploymentsPath);
 
-    deployments[env] ??= {};
-    deployments[env][contractName] = contract.address;
+    if (ENV === "prod") {
+        deployments.prod ??= {};
+
+        const existing = deployments.prod[contractName];
+
+        if (!existing) {
+            deployments.prod[contractName] = {
+                current: contract.address,
+                history: [],
+            };
+        } else {
+            deployments.prod[contractName] = {
+                current: contract.address,
+                history: [existing.current, ...existing.history],
+            };
+        }
+
+        console.log(
+            `Saved to deployments.json -> prod.${contractName}.current`
+        );
+    } else if (ENV === "dev") {
+        deployments.dev ??= {};
+        deployments.dev[contractName] = contract.address;
+        console.log(`Saved to deployments.json -> dev.${contractName}`);
+    } else {
+        deployments.local ??= {};
+        deployments.local[contractName] = contract.address;
+        console.log(`Saved to deployments.json -> local.${contractName}`);
+    }
 
     fs.writeFileSync(deploymentsPath, JSON.stringify(deployments, null, 2));
-    console.log(`Saved to deployments.json -> ${env}.${contractName}`);
 }
 
 main().catch((err) => {
