@@ -1,9 +1,12 @@
 import fs from "fs";
 import path from "path";
 
-type DeploymentContract = {
-    current?: string;
-};
+type DeploymentContract =
+    | string
+    | {
+        current?: string;
+        history?: string[];
+    };
 
 type Deployments = Record<string, Record<string, DeploymentContract>>;
 
@@ -25,6 +28,14 @@ const EXPLORERS: Record<string, { network: string; baseUrl?: string }> = {
     },
 };
 
+function getAddress(contractData: DeploymentContract): string | undefined {
+    if (typeof contractData === "string") {
+        return contractData;
+    }
+
+    return contractData.current;
+}
+
 function buildSection(deployments: Deployments) {
     const lines = [
         START_MARKER,
@@ -38,7 +49,7 @@ function buildSection(deployments: Deployments) {
         const explorer = EXPLORERS[environment] ?? { network: "Custom" };
 
         for (const [contractName, contractData] of Object.entries(contracts)) {
-            const address = contractData?.current;
+            const address = getAddress(contractData);
 
             if (!address) {
                 continue;
