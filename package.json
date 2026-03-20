@@ -4,9 +4,13 @@
   "repository": "https://github.com/HACK-SP-BR/hackathon-contracts.git",
   "license": "MIT",
   "scripts": {
-    "compile": "npx hardhat compile",
-    "test": "npx hardhat test",
-    "deploy": "npx hardhat run scripts/deploy.ts --network base"
+    "chain": "hardhat node",
+    "deploy:local": "ENV=local hardhat run scripts/deploy.ts --network app",
+    "deploy:dev": "ENV=dev hardhat run scripts/deploy.ts --network app",
+    "deploy:prod": "ENV=prod hardhat run scripts/deploy.ts --network app",
+    "readme:addresses": "tsx scripts/update-readme-addresses.ts",
+    "test:local": "ENV=local tsx test/test.ts",
+    "test:dev": "ENV=dev tsx test/test.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.1.0",
@@ -15,6 +19,7 @@
     "dotenv": "^16.0.0",
     "hardhat": "^3.0.0",
     "ts-node": "^10.9.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0",
     "viem": "^2.47.5"
   },

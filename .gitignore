@@ -3,5 +3,5 @@
 /cache
 
 .env*
-!.env_sample
-.vscode
+!.env.sample
+/.vscode
