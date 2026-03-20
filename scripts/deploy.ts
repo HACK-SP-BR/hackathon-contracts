@@ -9,21 +9,35 @@ dotenv.config({
     path: path.resolve(process.cwd(), `.env.${ENV}`),
 });
 
-type SimpleEnvMap = Record<string, string>;
+type SimpleContractEntry = {
+    current: string;
+    version: string;
+};
+
+type ProdHistoryEntry = {
+    version: string;
+    address: string;
+};
+
 type ProdContractEntry = {
     current: string;
-    history: string[];
+    version: string;
+    history: ProdHistoryEntry[];
 };
-type ProdEnvMap = Record<string, ProdContractEntry>;
+
 type Deployments = {
-    local?: SimpleEnvMap;
-    dev?: SimpleEnvMap;
-    prod?: ProdEnvMap;
+    local?: Record<string, SimpleContractEntry>;
+    dev?: Record<string, SimpleContractEntry>;
+    prod?: Record<string, ProdContractEntry>;
 };
 
 function readDeployments(deploymentsPath: string): Deployments {
     if (!fs.existsSync(deploymentsPath)) {
-        return { local: {}, dev: {}, prod: {} };
+        return {
+            local: {},
+            dev: {},
+            prod: {},
+        };
     }
 
     return JSON.parse(fs.readFileSync(deploymentsPath, "utf-8"));
@@ -31,6 +45,8 @@ function readDeployments(deploymentsPath: string): Deployments {
 
 async function main() {
     const contractName = process.env.CONTRACT_NAME || "HackathonVoting";
+    const deployKey = process.env.DEPLOY_KEY || "HackathonVoting";
+    const version = process.env.CONTRACT_VERSION || "v1";
 
     const { viem, networkName } = await network.connect("app");
     const publicClient = await viem.getPublicClient();
@@ -39,6 +55,9 @@ async function main() {
     console.log(`Environment: ${ENV}`);
     console.log(`Network: ${networkName}`);
     console.log(`Deployer: ${wallet.account.address}`);
+    console.log(`Contract artifact: ${contractName}`);
+    console.log(`Deploy key: ${deployKey}`);
+    console.log(`Version: ${version}`);
 
     const balance = await publicClient.getBalance({
         address: wallet.account.address,
@@ -51,34 +70,37 @@ async function main() {
     const deploymentsPath = path.resolve("deployments.json");
     const deployments = readDeployments(deploymentsPath);
 
+    const baseEntry = {
+        current: contract.address,
+        version,
+    };
+
     if (ENV === "prod") {
         deployments.prod ??= {};
 
-        const existing = deployments.prod[contractName];
+        const existing = deployments.prod[deployKey];
 
-        if (!existing) {
-            deployments.prod[contractName] = {
-                current: contract.address,
-                history: [],
-            };
-        } else {
-            deployments.prod[contractName] = {
-                current: contract.address,
-                history: [existing.current, ...existing.history],
-            };
-        }
+        deployments.prod[deployKey] = {
+            ...baseEntry,
+            history: existing
+                ? [
+                    {
+                        version: existing.version,
+                        address: existing.current,
+                    },
+                    ...existing.history,
+                ]
+                : [],
+        };
 
-        console.log(
-            `Saved to deployments.json -> prod.${contractName}.current`
-        );
-    } else if (ENV === "dev") {
-        deployments.dev ??= {};
-        deployments.dev[contractName] = contract.address;
-        console.log(`Saved to deployments.json -> dev.${contractName}`);
+        console.log(`Saved to deployments.json -> prod.${deployKey}`);
     } else {
-        deployments.local ??= {};
-        deployments.local[contractName] = contract.address;
-        console.log(`Saved to deployments.json -> local.${contractName}`);
+        const targetEnv = ENV === "dev" ? "dev" : "local";
+
+        deployments[targetEnv] ??= {};
+        deployments[targetEnv][deployKey] = baseEntry;
+
+        console.log(`Saved to deployments.json -> ${targetEnv}.${deployKey}`);
     }
 
     fs.writeFileSync(deploymentsPath, JSON.stringify(deployments, null, 2));

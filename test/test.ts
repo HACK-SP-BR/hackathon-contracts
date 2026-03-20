@@ -7,10 +7,9 @@ import {
     getAddress,
     getContract,
     http,
-    UnauthorizedProviderError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { foundry, baseSepolia, base } from "viem/chains";
+import { foundry, baseSepolia } from "viem/chains";
 
 const ENV = process.env.ENV || "local";
 
@@ -18,122 +17,95 @@ dotenv.config({
     path: path.resolve(process.cwd(), `.env.${ENV}`),
 });
 
-if (ENV == "prod") {
-    throw new Error('You can\'t test using prod enviroment');
+if (ENV === "prod") {
+    throw new Error("You can't test using prod environment");
 }
 
 const RPC_URL = process.env.RPC_URL;
-const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
+const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}` | undefined;
 const CONTRACT_NAME = process.env.CONTRACT_NAME || "HackathonVoting";
+const DEPLOY_KEY = process.env.DEPLOY_KEY || "HackathonVoting";
 
 if (!RPC_URL) throw new Error(`Missing RPC_URL in .env.${ENV}`);
 if (!PRIVATE_KEY) throw new Error(`Missing PRIVATE_KEY in .env.${ENV}`);
 
-const abi = [
-    {
-        type: "function",
-        name: "owner",
-        stateMutability: "view",
-        inputs: [],
-        outputs: [{ name: "", type: "address" }],
-    },
-    {
-        type: "function",
-        name: "hackathonCount",
-        stateMutability: "view",
-        inputs: [],
-        outputs: [{ name: "", type: "uint256" }],
-    },
-    {
-        type: "function",
-        name: "createHackathon",
-        stateMutability: "nonpayable",
-        inputs: [],
-        outputs: [],
-    },
-    {
-        type: "function",
-        name: "openVoting",
-        stateMutability: "nonpayable",
-        inputs: [{ name: "hackathonId", type: "uint256" }],
-        outputs: [],
-    },
-    {
-        type: "function",
-        name: "closeVoting",
-        stateMutability: "nonpayable",
-        inputs: [{ name: "hackathonId", type: "uint256" }],
-        outputs: [],
-    },
-    {
-        type: "function",
-        name: "addProject",
-        stateMutability: "nonpayable",
-        inputs: [
-            { name: "hackathonId", type: "uint256" },
-            { name: "name", type: "string" },
-        ],
-        outputs: [],
-    },
-    {
-        type: "function",
-        name: "registerVoter",
-        stateMutability: "nonpayable",
-        inputs: [
-            { name: "hackathonId", type: "uint256" },
-            { name: "voter", type: "address" },
-            { name: "role", type: "uint8" },
-        ],
-        outputs: [],
-    },
-    {
-        type: "function",
-        name: "getProject",
-        stateMutability: "view",
-        inputs: [
-            { name: "hackathonId", type: "uint256" },
-            { name: "projectId", type: "uint256" },
-        ],
-        outputs: [
-            { name: "name", type: "string" },
-            { name: "votes", type: "uint256" },
-        ],
-    },
-    {
-        type: "function",
-        name: "getProjectCount",
-        stateMutability: "view",
-        inputs: [{ name: "hackathonId", type: "uint256" }],
-        outputs: [{ name: "", type: "uint256" }],
-    },
-] as const;
+type DeploymentEntry =
+    | string
+    | {
+        current: string;
+        version?: string;
+        history?: Array<{
+            version?: string;
+            address: string;
+        }>;
+    };
+
+type DeploymentsFile = {
+    local?: Record<string, DeploymentEntry>;
+    dev?: Record<string, DeploymentEntry>;
+    prod?: Record<string, DeploymentEntry>;
+};
 
 function getChain(env: string) {
     if (env === "dev") return baseSepolia;
     return foundry;
 }
 
-function getContractAddress(env: string, contractName: string) {
+function getContractAddress(env: string, deployKey: string) {
     const deploymentsPath = path.resolve(process.cwd(), "deployments.json");
 
     if (!fs.existsSync(deploymentsPath)) {
         throw new Error("deployments.json not found");
     }
 
-    const deployments = JSON.parse(fs.readFileSync(deploymentsPath, "utf-8"));
-    const address = deployments?.[env]?.[contractName];
+    const deployments = JSON.parse(
+        fs.readFileSync(deploymentsPath, "utf-8")
+    ) as DeploymentsFile;
 
-    if (!address) {
-        throw new Error(`Missing deployments.${env}.${contractName}`);
+    const entry = deployments?.[env as keyof DeploymentsFile]?.[deployKey];
+
+    if (!entry) {
+        throw new Error(`Missing deployments.${env}.${deployKey}`);
     }
 
-    return getAddress(address);
+    if (typeof entry === "string") {
+        return getAddress(entry);
+    }
+
+    if (!entry.current) {
+        throw new Error(`Missing deployments.${env}.${deployKey}.current`);
+    }
+
+    return getAddress(entry.current);
+}
+
+function getContractAbi(contractName: string) {
+    const artifactPath = path.resolve(
+        process.cwd(),
+        "artifacts",
+        "contracts",
+        `${contractName}.sol`,
+        `${contractName}.json`
+    );
+
+    if (!fs.existsSync(artifactPath)) {
+        throw new Error(`Artifact not found: ${artifactPath}`);
+    }
+
+    const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf-8"));
+
+    if (!artifact.abi) {
+        throw new Error(`Missing abi in artifact: ${artifactPath}`);
+    }
+
+    return artifact.abi;
 }
 
 async function main() {
-    const contractAddress = getContractAddress(ENV, CONTRACT_NAME);
+    const contractAddress = getContractAddress(ENV, DEPLOY_KEY);
     const chain = getChain(ENV);
     const account = privateKeyToAccount(PRIVATE_KEY);
+    const abi = getContractAbi(CONTRACT_NAME);
 
     const publicClient = createPublicClient({
         chain,
@@ -156,7 +128,9 @@ async function main() {
     });
 
     console.log(`Environment: ${ENV}`);
-    console.log("Contract:", contractAddress);
+    console.log(`Contract artifact: ${CONTRACT_NAME}`);
+    console.log(`Deploy key: ${DEPLOY_KEY}`);
+    console.log("Contract address:", contractAddress);
     console.log("Signer:", account.address);
 
     const balance = await publicClient.getBalance({ address: account.address });
@@ -170,8 +144,10 @@ async function main() {
 
     console.log("\nCreating hackathon...");
     const createHash = await contract.write.createHackathon();
+
     const createReceipt = await publicClient.waitForTransactionReceipt({
         hash: createHash,
+        confirmations: 1,
     });
 
     console.log("createHackathon tx:", createHash);
@@ -192,8 +168,10 @@ async function main() {
         hackathonId,
         `Projeto ${ENV} ${Date.now()}`,
     ]);
+
     const addProjectReceipt = await publicClient.waitForTransactionReceipt({
         hash: addProjectHash,
+        confirmations: 1,
     });
 
     console.log("addProject tx:", addProjectHash);

@@ -1,15 +1,29 @@
 {
   "local": {
-    "HackathonVoting": "0x5fbdb2315678afecb367f032d93f642f64180aa3"
+    "HackathonVoting": {
+      "current": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+      "version": "v2"
+    }
   },
   "dev": {
-    "HackathonVoting": "0x713a96a263da1b5330e385f5ddd80a52e15119dd"
+    "HackathonVoting": {
+      "current": "0x03c1ba0e11ed7f4da68beda1d19b0c0028908a73",
+      "version": "v2"
+    }
   },
   "prod": {
     "HackathonVoting": {
-      "current": "0x03c1ba0e11ed7f4da68beda1d19b0c0028908a73",
+      "current": "0x8fc6ffaac6344db82d4cf7ffb6e4ccbff93e9713",
+      "version": "v2",
       "history": [
-        "0x9c5ec34f0a3348e0baff020ae9ed301ff69f76ad"
+        {
+          "version": "v2",
+          "address": "0xf0731984e1d96d66013b8fc9858f32d99eb1ea6d"
+        },
+        {
+          "version": "v1",
+          "address": "0x03c1ba0e11ed7f4da68beda1d19b0c0028908a73"
+        }
       ]
     }
   }
